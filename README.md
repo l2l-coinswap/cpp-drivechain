@@ -19,6 +19,15 @@ Default data directories:
 
 Default config file name: `drivechaincpp.conf`
 
+Ports:
+```
+MAIN: 
+  Net: 8386
+  RPC: 18386
+REGTEST: 
+  Net: 18486
+  RPC: 18864
+```
 
 Based on Bitcoin Core:
 ---------------------
