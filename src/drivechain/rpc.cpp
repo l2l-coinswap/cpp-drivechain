@@ -12,6 +12,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
@@ -274,21 +275,78 @@ bool RPCGetDeposits(/* Maybe: std::vector<DrivechainDeposit>& vDeposit*/)
     return true;
 }
 
-bool RPCGetSidechainDeposits()
+bool RPCGetSidechainDeposits(std::vector<SidechainDeposit>& deposits)
 {
     std::string json;
     json.append("{\"jsonrpc\": \"2.0\", \"id\":\"Drivechain\", ");
-    json.append("\"method\": \"validator.ping\", \"params\": ");
+    json.append("\"method\": \"wallet.list_sidechain_deposit_transactions\", \"params\": ");
     json.append("[] }");
 
     boost::property_tree::ptree ptree;
     if (!RPCEnforcer(json, ptree)) {
-        LogPrintf("ERROR Sidechain client failed to request ping!\n");
+        LogPrintf("ERROR Sidechain client failed to request sidechain deposits!\n");
         return false;
     }
 
-    std::string strHash = ptree.get("result", "");
-    std::cout << "Result: " << strHash << std::endl;
-
-    return true;
+    try {
+        // Get the result array from the JSON-RPC response
+        boost::property_tree::ptree result_array = ptree.get_child("result");
+        
+        // Clear the deposits vector
+        deposits.clear();
+        
+        // Iterate through the result array
+        for (const auto& deposit_item : result_array) {
+            if (deposit_item.second.empty()) continue;
+            
+            // Each deposit item should be an array with [id, transaction_data]
+            auto deposit_array = deposit_item.second;
+            auto it = deposit_array.begin();
+            
+            if (it == deposit_array.end()) continue;
+            
+            SidechainDeposit deposit;
+            
+            // Get the ID (first element)
+            deposit.id = it->second.get_value<int>();
+            ++it;
+            
+            if (it == deposit_array.end()) continue;
+            
+            // Get the transaction data (second element)
+            auto tx_data = it->second;
+            
+            // Parse transaction fields
+            deposit.txid = tx_data.get("txid", "");
+            deposit.fee = tx_data.get("fee", 0);
+            deposit.received = tx_data.get("received", 0);
+            deposit.sent = tx_data.get("sent", 0);
+            
+            // Parse chain_position data
+            auto chain_position = tx_data.get_child_optional("chain_position");
+            if (chain_position) {
+                auto confirmed = chain_position->get_child_optional("Confirmed");
+                if (confirmed) {
+                    auto anchor = confirmed->get_child_optional("anchor");
+                    if (anchor) {
+                        auto block_id = anchor->get_child_optional("block_id");
+                        if (block_id) {
+                            deposit.block_height = block_id->get("height", 0);
+                            deposit.block_hash = block_id->get("hash", "");
+                        }
+                        deposit.confirmation_time = anchor->get("confirmation_time", 0);
+                    }
+                }
+            }
+            
+            deposits.push_back(deposit);
+        }
+        
+        LogPrintf("Successfully parsed %d sidechain deposits\n", deposits.size());
+        return true;
+        
+    } catch (const std::exception& e) {
+        LogPrintf("ERROR parsing sidechain deposits response: %s\n", e.what());
+        return false;
+    }
 }

@@ -3392,6 +3392,18 @@ static RPCHelpMan getsidechaindeposittxs()
             RPCResult::Type::OBJ, "", "", {
                                               {RPCResult::Type::BOOL, "success", "Whether the request was successful"},
                                               {RPCResult::Type::STR, "message", "Response message from the enforcer"},
+                                              {RPCResult::Type::ARR, "deposits", "Array of sidechain deposit transactions", {
+                                                  {RPCResult::Type::OBJ, "", "", {
+                                                      {RPCResult::Type::NUM, "id", "Deposit ID"},
+                                                      {RPCResult::Type::STR, "txid", "Transaction ID"},
+                                                      {RPCResult::Type::NUM, "fee", "Transaction fee in satoshis"},
+                                                      {RPCResult::Type::NUM, "received", "Amount received in satoshis"},
+                                                      {RPCResult::Type::NUM, "sent", "Amount sent in satoshis"},
+                                                      {RPCResult::Type::NUM, "block_height", "Block height where confirmed"},
+                                                      {RPCResult::Type::STR, "block_hash", "Block hash where confirmed"},
+                                                      {RPCResult::Type::NUM, "confirmation_time", "Block confirmation timestamp"},
+                                                  }},
+                                              }},
                                           }},
         RPCExamples{HelpExampleCli("getsidechaindeposittxs", "") + HelpExampleRpc("getsidechaindeposittxs", "")},
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue {
@@ -3400,12 +3412,31 @@ static RPCHelpMan getsidechaindeposittxs()
             CChain& active_chain = chainman.ActiveChain();
 
             UniValue res(UniValue::VOBJ);
-            if (!RPCGetSidechainDeposits()) {
+            std::vector<SidechainDeposit> deposits;
+            
+            if (!RPCGetSidechainDeposits(deposits)) {
                 throw JSONRPCError(RPC_MISC_ERROR, "Failed to get deposits from enforcer");
             }
 
             res.pushKV("success", true);
             res.pushKV("message", "Successfully retrieved sidechain deposits");
+            
+            // Add deposits array to response
+            UniValue depositsArray(UniValue::VARR);
+            for (const auto& deposit : deposits) {
+                UniValue depositObj(UniValue::VOBJ);
+                depositObj.pushKV("id", deposit.id);
+                depositObj.pushKV("txid", deposit.txid);
+                depositObj.pushKV("fee", deposit.fee);
+                depositObj.pushKV("received", deposit.received);
+                depositObj.pushKV("sent", deposit.sent);
+                depositObj.pushKV("block_height", deposit.block_height);
+                depositObj.pushKV("block_hash", deposit.block_hash);
+                depositObj.pushKV("confirmation_time", deposit.confirmation_time);
+                depositsArray.push_back(depositObj);
+            }
+            res.pushKV("deposits", depositsArray);
+            
             return res;
         },
     };
@@ -3450,3 +3481,4 @@ void RegisterBlockchainRPCCommands(CRPCTable& t)
         t.appendCommand(c.name, &c);
     }
 }
+
