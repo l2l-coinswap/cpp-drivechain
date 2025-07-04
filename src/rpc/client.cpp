@@ -320,7 +320,10 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "stop", 0, "wait" },
     { "addnode", 2, "v2transport" },
     { "addconnection", 2, "v2transport" },
+    { "getctip", 0, "sidechain_number" },
+    { "getblockinfo", 1, "sidechain_number" },
 };
+
 // clang-format on
 
 /** Parse string to UniValue or throw runtime_error if string contains invalid JSON */
