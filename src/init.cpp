@@ -337,6 +337,9 @@ void Shutdown(NodeContext& node)
         }
     }
 
+    // Write BMM cache to disk
+    DumpBMMCache();
+
     // FlushStateToDisk generates a ChainStateFlushed callback, which we should avoid missing
     if (node.chainman) {
         LOCK(cs_main);
@@ -1652,6 +1655,10 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 
     // ********************************************************* Step 7: load block chain
 
+    // Load BMM cache from disk
+    uiInterface.InitMessage(_("Loading Drivechain BMM cache..."));
+    LoadBMMCache();
+
     node.notifications = std::make_unique<KernelNotifications>(Assert(node.shutdown_request), node.exit_status, *Assert(node.warnings));
     auto& kernel_notifications{*node.notifications};
     ReadNotificationArgs(args, kernel_notifications);
@@ -1868,6 +1875,14 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     if (ShutdownRequested(node)) {
         return false;
     }
+
+    // Try to sync mainchain block cache 
+    bool fUpdateCache = gArgs.GetBoolArg("-updatemainblockcache", true);
+    if (fUpdateCache) {
+        uiInterface.InitMessage(_("Updating mainchain block cache please wait..."));
+        UpdateMainBlockCache();
+    }
+
 
     // ********************************************************* Step 12: start node
 
