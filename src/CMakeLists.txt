@@ -225,6 +225,7 @@ add_library(bitcoin_node STATIC EXCLUDE_FROM_ALL
   consensus/tx_verify.cpp
   dbwrapper.cpp
   deploymentstatus.cpp
+  drivechain/bmmcache.cpp
   drivechain/drivechain.cpp
   drivechain/config.cpp
   drivechain/rpc.cpp
