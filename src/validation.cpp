@@ -18,6 +18,7 @@
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
 #include <cuckoocache.h>
+#include <drivechain/bmmcache.h>
 #include <drivechain/drivechain.h>
 #include <flatfile.h>
 #include <hash.h>
@@ -88,6 +89,8 @@ using node::BlockMap;
 using node::CBlockIndexHeightOnlyComparator;
 using node::CBlockIndexWorkComparator;
 using node::SnapshotMetadata;
+
+BMMCache bmmCache;
 
 /** Size threshold for warning about slow UTXO set flush to disk. */
 static constexpr size_t WARN_FLUSH_COINS_SIZE = 1 << 30; // 1 GiB
@@ -6579,4 +6582,19 @@ std::pair<int, int> ChainstateManager::GetPruneRange(const Chainstate& chainstat
     int prune_end = std::min(last_height_can_prune, max_prune);
 
     return {prune_start, prune_end};
+}
+
+void LoadBMMCache() 
+{
+    bmmCache.LoadBMMCache();
+}
+
+void DumpBMMCache() 
+{
+    bmmCache.DumpBMMCache();
+}
+
+void UpdateMainBlockCache()
+{
+    bmmCache.UpdateMainBlockCache();
 }

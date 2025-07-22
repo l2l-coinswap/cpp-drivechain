@@ -46,6 +46,7 @@
 #include <utility>
 #include <vector>
 
+class BMMCache;
 class Chainstate;
 class CTxMemPool;
 class ChainstateManager;
@@ -1351,5 +1352,10 @@ bool IsBIP30Repeat(const CBlockIndex& block_index);
 
 /** Identifies blocks which coinbase output was subsequently overwritten in the UTXO set (see BIP30) */
 bool IsBIP30Unspendable(const CBlockIndex& block_index);
+
+// Drivechain 
+void LoadBMMCache();
+void DumpBMMCache();
+void UpdateMainBlockCache();
 
 #endif // BITCOIN_VALIDATION_H
